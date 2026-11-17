@@ -1,4 +1,4 @@
-import importlib,os
+import importlib,os,base64
 from flask import Flask,jsonify,request,redirect,Response
 from app.config import MODULES
 from app.errors import DomainError
@@ -30,6 +30,19 @@ def create_app():
         data=request.get_json(silent=True) or {}
         if not isinstance(data.get('version'),int):raise DomainError('VERSION','请提交复核版本')
         return jsonify(store.review(run_id,data['version'],data.get('decision')))
+    @app.post('/api/runs/<run_id>/decide')
+    def decide(run_id):
+        # 在同一来源上应用合版裁决；同一决定重跑得到同一批次，不新增损耗或成本；生成失败不写库，保留旧版。
+        data=request.get_json(silent=True) or {}
+        if not isinstance(data,dict):raise DomainError('PAYLOAD','请求必须是对象')
+        previous=store.get(run_id)
+        source=base64.b64decode(previous['source_b64'])
+        params=dict(previous.get('manifest',{}).get('parameters') or {})
+        ganging=data.get('ganging')
+        if ganging in (None,'solo'):params.pop('ganging',None)
+        else:params['ganging']=ganging
+        state=run(source,params)
+        return jsonify(store.save(state['run_id'],state))
     @app.get('/api/archive/<run_id>/export.csv')
     def download(run_id):
         state=store.get(run_id)

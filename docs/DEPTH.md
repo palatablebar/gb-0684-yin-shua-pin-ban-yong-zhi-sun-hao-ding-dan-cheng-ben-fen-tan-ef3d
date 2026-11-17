@@ -31,10 +31,15 @@
 | TRAP-26 | 旧版本复核 | 覆盖新结论 | 事务条件更新 | `app/store.py` | `tests/test_archive.py::test_stale_review` |
 | TRAP-15 | cm与mm | 尺寸相差10倍 | 尺寸统一mm | `app/modules/m3_versions/rules.py` | `tests/test_versions.py::test_real_cm_conversion` |
 | TRAP-24 | 分币尾差 | 合计不相等 | 按纸批最大余额 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_largest_remainder` |
+| TRAP-27 | 组内分币尾差 | 组成本≠成员和 | 以组成本为目标再分摊 | `app/modules/m5_calculate/rules.py` | `tests/test_ganging.py::test_apportion_with_target` |
+| TRAP-28 | 急单等晚单 | 生产日被拖晚 | 组生产日取最早交期 | `app/modules/m3_versions/ganging.py` | `tests/test_ganging.py::test_proposal_same_paper_same_spec` |
+| TRAP-29 | 共享损耗重复计 | 开机损耗按单收 | 全组共担一次再分摊 | `app/modules/m4_segments/rules.py` | `tests/test_ganging.py::test_auto_shared_startup_once` |
+| TRAP-30 | 决定重跑 | 重复损耗成本 | 幂等键含裁决参数 | `app/main.py` | `tests/test_ganging.py::test_decide_idempotent` |
+| TRAP-31 | 生成失败覆盖 | 旧版丢失 | 失败不写库 | `app/main.py` | `tests/test_ganging.py::test_decide_failure_keeps_old_version` |
 
 ## 对账规则
 
-输入行数=采纳+隔离+空行+重复表头+完全重复；业务总数与计算证据独立求和。隔离行保留来源行、ID、原因码与原值。
+输入行数=采纳+隔离+空行+重复表头+完全重复；业务总数与计算证据独立求和。隔离行保留来源行、ID、原因码与原值。合版组内核对：各单分摊的损耗合计=组合计，各单成本合计=组成本，组库存扣减=组总张数；整组对账通过才允许封存与导出。
 
 ## 已知不覆盖
 

@@ -28,8 +28,9 @@ def history():
 def review(run_id, version, decision):
     if decision not in ('通过','退回'):raise DomainError('DECISION','复核状态无效')
     with connection() as db:
+        row=db.execute('SELECT body FROM runs WHERE id=?',(run_id,)).fetchone()
+        if not row:raise DomainError('NOT_FOUND','批次不存在',404)
+        if decision=='通过' and not json.loads(row['body']).get('reconcile',{}).get('balanced'):raise DomainError('UNBALANCED','整组对账未通过，不能封存')
         cur=db.execute('UPDATE runs SET version=version+1,decision=? WHERE id=? AND version=?',(decision,run_id,version))
-        if cur.rowcount!=1:
-            if not db.execute('SELECT 1 FROM runs WHERE id=?',(run_id,)).fetchone():raise DomainError('NOT_FOUND','批次不存在',404)
-            raise DomainError('STALE','复核版本已更新，请刷新',409)
+        if cur.rowcount!=1:raise DomainError('STALE','复核版本已更新，请刷新',409)
     return get(run_id)
